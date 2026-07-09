@@ -160,3 +160,6 @@ CORS_ALLOWED_ORIGINS = [
 
 # If your frontend needs to pass credentials like cookies or authorization headers
 CORS_ALLOW_CREDENTIALS = True
+
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
