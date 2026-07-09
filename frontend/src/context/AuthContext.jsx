@@ -18,11 +18,12 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = (access, refresh) => {
-    localStorage.setItem("access", access);
-    localStorage.setItem("refresh", refresh);
-    setUser(jwtDecode(access));
-  };
+ const login = (access, refresh, userData) => {
+   localStorage.setItem("access", access);
+   localStorage.setItem("refresh", refresh);
+
+   setUser(userData);
+ };
 
   const logout = () => {
     localStorage.clear();
