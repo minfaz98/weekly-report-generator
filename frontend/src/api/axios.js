@@ -1,10 +1,56 @@
 import axios from "axios";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+const API = axios.create({
+  baseURL: "http://localhost:8000/api/auth", // Removed trailing slash here
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-export default api;
+// Request Interceptor to append Authorization token
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+// Response Interceptor to manage sliding-session JWT auto-refresh
+API.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = localStorage.getItem("refresh_token");
+        const response = await axios.post(
+          "http://localhost:8000/api/refresh/",
+          {
+            refresh: refreshToken,
+          },
+        );
+
+        const { access } = response.data;
+        localStorage.setItem("access_token", access);
+        originalRequest.headers.Authorization = `Bearer ${access}`;
+
+        return API(originalRequest);
+      } catch (refreshError) {
+        // Refresh token failed or is expired -> Flush Auth state
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
+export default API;

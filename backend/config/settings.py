@@ -148,6 +148,14 @@ STATIC_URL = 'static/'
 
 AUTH_USER_MODEL = "accounts.User"
 
+# CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+        # This explicitly allows your current React port!
 ]
+
+# If your frontend needs to pass credentials like cookies or authorization headers
+CORS_ALLOW_CREDENTIALS = True
