@@ -14,9 +14,10 @@ export default function Register() {
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      role: "TEAM_MEMBER", // Explicitly locked to regular users
+      role: "TEAM_MEMBER",
     },
   });
+
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
 
@@ -26,7 +27,8 @@ export default function Register() {
       toast.success(
         "Registration successful! Please login with your new credentials.",
       );
-      navigate("/login"); // Clean redirection anchor to login page
+      // 🌟 Explicitly targets our newly synchronized routing endpoint path mapping
+      navigate("/login");
     } catch (err) {
       const errorMsg = err.response?.data
         ? Object.values(err.response.data).flat().join(" ")
@@ -70,7 +72,7 @@ export default function Register() {
             error={errors.password}
           />
 
-          {/* Hidden field enforcing the role */}
+          {/* Hidden metadata constraint configuration block */}
           <input type="hidden" {...register("role")} value="TEAM_MEMBER" />
 
           <button
@@ -85,7 +87,7 @@ export default function Register() {
         <p className="text-sm text-center text-gray-600 mt-5">
           Already registered?{" "}
           <Link
-            to="/"
+            to="/login"
             className="text-blue-600 font-semibold hover:underline"
           >
             Log In
