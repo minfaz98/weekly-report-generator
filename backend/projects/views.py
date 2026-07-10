@@ -1,5 +1,6 @@
 import os
-import requests
+from dotenv import load_dotenv
+from google import genai
 from django.db.models import Prefetch
 from rest_framework import filters, viewsets, status
 from rest_framework.permissions import IsAuthenticated
@@ -11,8 +12,24 @@ from .models import Project
 from .permissions import IsManagerOrAdmin
 from .serializers import ProjectSerializer
 
+# 1. Load active .env parameters from your backend root directory automatically
+load_dotenv()
+
+# 2. Initialize the Gemini API Client Engine
+# The Google Gen AI SDK automatically hooks into os.environ["GEMINI_API_KEY"]
+gemini_client = genai.Client()
+
 
 class ProjectViewSet(viewsets.ModelViewSet):
+    """
+    Project Management & Operational AI Analytics ViewSet API
+
+    Team Members:
+        - View assigned active project directories only.
+    Managers / Administrators:
+        - Full CRUD privileges over project configuration mappings.
+        - Executively restricted access to the cross-team AI Analysis Engine.
+    """
     serializer_class = ProjectSerializer
     permission_classes = [IsAuthenticated, IsManagerOrAdmin]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -34,86 +51,78 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def ai_insights(self, request):
         """
         AI Assistant Core Service Engine (RAG Context Injection Pipeline).
-        Restricted to Managers / Administrators for data governance.
+        Restricted to Managers / Administrators for secure data governance.
         """
         user = request.user
+
+        # 🛑 Role-Based Access Control Guardrail
         if not user.is_superuser and getattr(user, "role", None) != "MANAGER":
             return Response(
-                {"error": "Access Denied. AI Operational insights are restricted to management accounts."},
+                {"error": "Access Denied. AI Operational insights are strictly restricted to management accounts."},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         manager_prompt = request.data.get("prompt", "").strip()
         if not manager_prompt:
             return Response(
-                {"error": "Please provide a search prompt query context."},
+                {"error": "Please provide a valid query prompt context for analysis."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 1. Gather all active operational reports across the team
+        # 🗃️ 1. Context Collection Layer
+        # Gather recent submitted operational documents to feed into the prompt engine window
         active_reports = WeeklyReport.objects.select_related("user", "project").filter(
             status=WeeklyReport.Status.SUBMITTED
-        )[:40]  # Optimize window allocation boundary
+        ).order_by("-week_start")[:40]
 
-        # 2. Build the anonymized RAG context payload to respect data privacy
+        # 🔒 2. Data Privacy & Anonymization Layer
+        # We strip sensitive personal credentials (like hashes or emails) out of transmission entirely.
         context_lines = []
         for r in active_reports:
             context_lines.append(
-                f"Worker: {r.user.username} | Project Scope: {r.project.name} | "
-                f"Timeline Start: {r.week_start} | Completed Milestones: {r.tasks_completed} | "
-                f"Active Blockers: {r.blockers or 'None'} | Hours Tracked: {r.hours_worked or 'N/A'}"
+                f"Team Member: {r.user.username} | Project Title: {r.project.name} | "
+                f"Week Beginning: {r.week_start} | Completed Tasks: {r.tasks_completed} | "
+                f"Reported Blockers: {r.blockers or 'None'} | Logged Work Hours: {r.hours_worked or 'N/A'}"
             )
         db_context = "\n".join(context_lines)
 
-        # 3. Construct System Instructions & Prompt Boundaries
+        # 🤖 3. System Instructions & Prompt Strategy Context
         system_instruction = (
             "You are an elite operational AI management intelligence co-pilot. Your task is to analyze the "
             "provided real-time team report records and respond to the manager's inquiry accurately. "
-            "Focus on identifying recurring blocking points, cross-team workload distribution imbalances, "
-            "and highlighting critical progress milestones. Keep insights highly clear, actionable, and structured.\n\n"
+            "Focus heavily on identifying recurring blocking points across the workforce, cross-team workload "
+            "distribution imbalances, and highlighting critical progress milestones. Keep insights completely "
+            "objective, clear, actionable, and structured using clean Markdown headers.\n\n"
             f"### Real-time Team Activity Context Data:\n{db_context}"
         )
 
-        # 4. Fire the payload to your LLM provider provider gateway (Example using OpenAI's standard endpoints)
-        api_key = os.getenv("OPENAI_API_KEY", "")
-        if not api_key:
+        # 🔑 4. Verify Gemini Key Environment Variables
+        if not os.getenv("GEMINI_API_KEY"):
             return Response(
                 {
-                    "insights": "### 🤖 AI Assistant Context Active\n\n"
-                                "Your RAG compilation pipeline ran successfully! To enable live generative analysis, "
-                                "please configure your environment variables with `OPENAI_API_KEY` on your backend server.\n\n"
-                                "**Extracted Context Summary:**\n"
-                                f"- Active reports read: `{active_reports.count()}` records.\n"
-                                f"- Latest inquiry captured: *\"{manager_prompt}\"*"
+                    "insights": "### 🤖 AI Assistant Pipeline Offline\n\n"
+                                "Your local RAG compilation database context window built successfully! "
+                                "To enable live generative analysis with Gemini, please write your valid "
+                                "`GEMINI_API_KEY` into your `backend/.env` configuration file.\n\n"
+                                "**Extracted Context Parameters:**\n"
+                                f"- Active records pulled from DB: `{len(context_lines)}` verified reports.\n"
+                                f"- Received prompt text: *\"{manager_prompt}\"*"
                 },
                 status=status.HTTP_200_OK
             )
 
+        # 🚀 5. Execute High-Performance Content Generation using gemini-2.5-flash
         try:
-            url = "https://api.openai.com/v1/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": manager_prompt}
-                ],
-                "temperature": 0.3
-            }
-            
-            response = requests.post(url, json=payload, headers=headers, timeout=15)
-            if response.status_code == 200:
-                ai_text = response.json()["choices"][0]["message"]["content"]
-                return Response({"insights": ai_text}, status=status.HTTP_200_OK)
-            return Response(
-                {"error": f"LLM engine returned an error status code: {response.status_code}"},
-                status=status.HTTP_502_BAD_GATEWAY
+            interaction = gemini_client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=manager_prompt,
+                config={"system_instruction": system_instruction}
             )
-        except Exception:
+
+            return Response({"insights": interaction.text}, status=status.HTTP_200_OK)
+
+        except Exception as e:
             return Response(
-                {"error": "AI pipeline timed out processing contextual data arrays."},
+                {"error": f"AI Engine Exception Exception: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
