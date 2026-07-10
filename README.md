@@ -1,7 +1,6 @@
 # Weekly Report Generator & Management Analytics Dashboard
 
-Full Stack Weekly Report Generator built with React, Django REST Framework and MySQL.
-**Django REST Framework (DRF)** backend API, an interactive **React.js (Vite + Tailwind CSS)** management UI dashboard utilizing **Chart.js** visuals, a **MySQL** relational data layer, and an integrated **Gemini AI RAG Co-Pilot** layout panel.
+Full Stack Weekly Report Generator built**Django REST Framework (DRF)** backend API, an interactive **React.js (Vite + Tailwind CSS)** management UI dashboard utilizing **Chart.js** visuals, a **MySQL** relational data layer, and an integrated **Gemini AI RAG Co-Pilot** layout panel.
 ---
 
 ## 🛠️ Global Project Architecture
