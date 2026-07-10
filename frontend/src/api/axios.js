@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:8000/api/auth", // Removed trailing slash here
+  baseURL: "http://localhost:8000/api/", // Removed trailing slash here
   headers: {
     "Content-Type": "application/json",
   },

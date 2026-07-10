@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.db import models
-
 from projects.models import Project
 
 
@@ -9,6 +8,7 @@ class WeeklyReport(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Draft"
         SUBMITTED = "SUBMITTED", "Submitted"
+        LATE = "LATE", "Late"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -26,12 +26,8 @@ class WeeklyReport(models.Model):
     week_end = models.DateField()
 
     tasks_completed = models.TextField()
-
     tasks_planned = models.TextField()
-
-    blockers = models.TextField(
-        blank=True
-    )
+    blockers = models.TextField(blank=True)
 
     hours_worked = models.DecimalField(
         max_digits=5,
@@ -40,9 +36,7 @@ class WeeklyReport(models.Model):
         blank=True,
     )
 
-    notes = models.TextField(
-        blank=True
-    )
+    notes = models.TextField(blank=True)
 
     status = models.CharField(
         max_length=20,
@@ -64,12 +58,10 @@ class WeeklyReport(models.Model):
     )
 
     class Meta:
-
         ordering = [
             "-week_start",
             "-created_at",
         ]
-
         unique_together = [
             "user",
             "week_start",

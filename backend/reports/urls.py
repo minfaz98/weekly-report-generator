@@ -1,7 +1,10 @@
-from django.urls import path
-from .views import ReportListCreateView, ReportDetailUpdateView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import WeeklyReportViewSet
+
+router = DefaultRouter()
+router.register(r'', WeeklyReportViewSet, basename='weekly-report')
 
 urlpatterns = [
-    path("", ReportListCreateView.as_view(), name="report-list-create"),
-    path("<int:pk>/", ReportDetailUpdateView.as_view(), name="report-detail-update"),
+    path('', include(router.urls)),
 ]

@@ -5,7 +5,6 @@ from django.conf import settings
 class Project(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
-
     is_active = models.BooleanField(default=True)
 
     assigned_members = models.ManyToManyField(

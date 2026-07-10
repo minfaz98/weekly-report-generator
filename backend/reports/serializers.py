@@ -1,18 +1,24 @@
-from rest_framework import serializers
 from django.utils import timezone
+from rest_framework import serializers
 from .models import WeeklyReport
-from accounts.serializers import UserSerializer
+
 
 class WeeklyReportSerializer(serializers.ModelSerializer):
-    user_details = UserSerializer(source="user", read_only=True)
-    project_name = serializers.CharField(source="project.name", read_only=True)
+    user_name = serializers.CharField(
+        source="user.username",
+        read_only=True
+    )
+    project_name = serializers.CharField(
+        source="project.name",
+        read_only=True
+    )
 
     class Meta:
         model = WeeklyReport
         fields = [
             "id",
             "user",
-            "user_details",
+            "user_name",
             "project",
             "project_name",
             "week_start",
@@ -27,25 +33,40 @@ class WeeklyReportSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["user", "submitted_at", "created_at", "updated_at"]
+        read_only_fields = (
+            "user",
+            "submitted_at",
+            "created_at",
+            "updated_at",
+        )
 
     def validate(self, attrs):
-        # Fallback check for instances where values are modified in segments
-        week_start = attrs.get("week_start", self.instance.week_start if self.instance else None)
-        week_end = attrs.get("week_end", self.instance.week_end if self.instance else None)
+        week_start = attrs.get("week_start", getattr(self.instance, "week_start", None))
+        week_end = attrs.get("week_end", getattr(self.instance, "week_end", None))
 
         if week_start and week_end and week_end < week_start:
             raise serializers.ValidationError(
-                {"week_end": "The week ending date cannot occur prior to the week starting anchor date."}
+                {"week_end": "Week end date cannot be before week start."}
             )
         return attrs
 
-    def update(self, instance, validated_data):
-        # Catch state transfers to drop a permanent submission date timestamp
-        old_status = instance.status
-        new_status = validated_data.get("status", old_status)
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        
+        # Automatically set timestamp if created with SUBMITTED status
+        if validated_data.get("status") == WeeklyReport.Status.SUBMITTED:
+            validated_data["submitted_at"] = timezone.now()
+            
+        return super().create(validated_data)
 
-        if old_status == "DRAFT" and new_status == "SUBMITTED":
+    def update(self, instance, validated_data):
+        new_status = validated_data.get("status", instance.status)
+        
+        # Automatically set timestamp on transition to SUBMITTED
+        if instance.status != WeeklyReport.Status.SUBMITTED and new_status == WeeklyReport.Status.SUBMITTED:
             instance.submitted_at = timezone.now()
+        # Clear timestamp if reverted to DRAFT
+        elif instance.status == WeeklyReport.Status.SUBMITTED and new_status == WeeklyReport.Status.DRAFT:
+            instance.submitted_at = None
 
         return super().update(instance, validated_data)

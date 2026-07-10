@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (username, password) => {
-    const response = await API.post("/login/", { username, password });
+    const response = await API.post("auth/login/", { username, password });
     const { access, refresh, user: userProfile } = response.data;
 
     localStorage.setItem("access_token", access);
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
-    await API.post("/register/", userData);
+    await API.post("auth/register/", userData);
   };
 
   const logout = () => {
