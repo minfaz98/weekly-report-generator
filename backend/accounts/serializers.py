@@ -14,12 +14,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             "username",
             "email",
             "password",
+            "first_name",
+            "last_name",
+            "contact_number",
         )
 
     def create(self, validated_data):
         password = validated_data.pop("password")
         
-        # Security Guardrail: Explicitly force public registration accounts to TEAM_MEMBER
         user = User(**validated_data)
         user.role = User.Role.TEAM_MEMBER
         user.set_password(password)
@@ -30,4 +32,5 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("id", "username", "email", "role")
+        fields = ("id", "username", "email", "first_name", "last_name", "contact_number", "role")
+        read_only_fields = ("id", "username", "role")

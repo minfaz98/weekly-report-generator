@@ -12,6 +12,8 @@ class User(AbstractUser):
         choices=Role.choices,
         default=Role.TEAM_MEMBER,
     )
+    email = models.EmailField(unique=True)
+    contact_number = models.CharField(max_length=15, unique=True, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

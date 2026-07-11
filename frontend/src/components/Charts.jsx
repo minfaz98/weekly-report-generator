@@ -11,6 +11,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler
 } from "chart.js";
 
 // Register ChartJS components globally for this sub-module context
@@ -24,6 +25,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
+  Filler
 );
 
 export default function Charts({

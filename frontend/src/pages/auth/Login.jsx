@@ -1,62 +1,142 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { HiOutlineShieldCheck } from "react-icons/hi";
+import { HiOutlineShieldCheck, HiOutlineUser } from "react-icons/hi";
+import { ShieldAlert } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "../../components/Input";
 import { PasswordInput } from "../../components/PasswordInput";
 
 export default function Login() {
+  const [isAdminView, setIsAdminView] = useState(false);
+
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm();
-  const { login } = useAuth();
+
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
     try {
-      const user = await login(data.username, data.password);
-      toast.success(`Welcome back, ${user.username}!`);
+      const userProfile = await login(data.username, data.password);
+
+      if (
+        isAdminView &&
+        !userProfile.is_superuser &&
+        userProfile.role !== "MANAGER"
+      ) {
+        logout();
+        toast.error(
+          "Access Denied. These credentials do not possess management clearances.",
+        );
+        return;
+      }
+
+      toast.success(`Welcome back, ${userProfile.username}!`);
       navigate("/dashboard");
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Invalid login details.");
+      let errorMsg = "Invalid username or password credentials.";
+
+      if (err.response?.status === 401 || err.response?.status === 400) {
+        const serverData = err.response.data;
+        if (serverData && typeof serverData === "object") {
+          const detail =
+            serverData.detail || Object.values(serverData).flat()[0];
+          if (detail) errorMsg = String(detail);
+        }
+      } else if (err.request) {
+        errorMsg =
+          "Network timeout connection loss to backend authentication pipelines.";
+      }
+
+      toast.error(errorMsg);
     }
+  };
+
+  const handleViewToggle = () => {
+    reset();
+    setIsAdminView(!isAdminView);
+    toast.success(
+      isAdminView
+        ? "Switched to standard Team Member login portal."
+        : "Administrative portal initialized. Enter your management credentials.",
+    );
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <motion.div
+        layout
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-8 rounded-xl shadow-md w-full max-w-md"
+        className="bg-white p-8 rounded-xl shadow-md w-full max-w-md transition-all"
       >
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-1">
+        <h2 className="text-2xl font-bold text-gray-800 text-center mb-1 font-sans">
           Weekly Report Sync
         </h2>
-        <p className="text-sm text-gray-500 text-center mb-6">
+        <p className="text-sm text-gray-500 text-center mb-6 font-sans">
           Sign in to manage your performance cycles
         </p>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Input
-            label="Username"
-            {...register("username", { required: "Username required" })}
-            error={errors.username}
-          />
-          <PasswordInput
-            label="Password"
-            {...register("password", { required: "Password required" })}
-            error={errors.password}
-          />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="relative overflow-hidden min-h-[168px]">
+            <AnimatePresence mode="wait">
+              {isAdminView ? (
+                <motion.div
+                  key="admin-fields"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Input
+                    label="Admin Username"
+                    {...register("username", {
+                      required: "Admin username required",
+                    })}
+                    error={errors.username}
+                  />
+                  <PasswordInput
+                    label="Admin Password"
+                    {...register("password", {
+                      required: "Admin password required",
+                    })}
+                    error={errors.password}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="user-fields"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Input
+                    label="Username"
+                    {...register("username", { required: "Username required" })}
+                    error={errors.username}
+                  />
+                  <PasswordInput
+                    label="Password"
+                    {...register("password", { required: "Password required" })}
+                    error={errors.password}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition duration-200 disabled:opacity-50 mt-2"
+            className="w-full py-2.5 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition duration-200 disabled:opacity-50 mt-2 text-xs uppercase tracking-wider"
           >
             {isSubmitting ? "Verifying..." : "Sign In"}
           </button>
@@ -73,21 +153,25 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Manager/Admin Specialized Portal Button */}
         <button
           type="button"
-          onClick={() => {
-            toast.success(
-              "Manager mode initialized! Please enter your administrative credentials above.",
-            );
-          }}
-          className="w-full py-2 border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 rounded-md font-semibold text-sm transition flex items-center justify-center gap-2 border-l-4 border-l-blue-600"
+          onClick={handleViewToggle}
+          className="w-full py-2 border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 rounded-md font-semibold text-sm transition flex items-center justify-center gap-2 border-l-4 border-l-blue-600 shadow-sm"
         >
-          <HiOutlineShieldCheck className="text-blue-600 w-5 h-5" />
-          <span>Log In as Manager/Administer </span>
+          {isAdminView ? (
+            <>
+              <HiOutlineUser className="text-blue-600 w-5 h-5" />
+              <span>Log In as Standard Team Member</span>
+            </>
+          ) : (
+            <>
+              <HiOutlineShieldCheck className="text-blue-600 w-5 h-5" />
+              <span>Log In as Manager/Administer</span>
+            </>
+          )}
         </button>
 
-        <p className="text-sm text-center text-gray-600 mt-5">
+        <p className="text-sm text-center text-gray-600 mt-5 font-sans">
           New to the team?{" "}
           <Link
             to="/register"

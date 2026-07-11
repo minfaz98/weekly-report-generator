@@ -7,7 +7,7 @@ import Dashboard from "./pages/dashboard/Dashboard";
 
 // Optional: Import your workspaces directly if you want explicit route declarations later
 import TeamMemberWorkspace from "./pages/dashboard/TeamMemberWorkspace";
-import ManagerWorkspace from "./pages/dashboard/ManagerWorkspace";
+import ManagerWorkspace from "./pages/manager/ManagerWorkspace";
 
 export default function App() {
   return (
@@ -16,7 +16,7 @@ export default function App() {
       <Route element={<AuthLayout />}>
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />{" "}
-        {/* 🌟 Explicit redirect target layer */}
+        {/*  Explicit redirect target layer */}
         <Route path="/register" element={<Register />} />
       </Route>
 

@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }) => {
         const decoded = jwtDecode(token);
         // Quick verification check against expiration time
         if (decoded.exp * 1000 > Date.now()) {
-          // Sync with local Storage user profiles
           const storedUser = localStorage.getItem("user_profile");
           if (storedUser) setUser(JSON.parse(storedUser));
         } else {
