@@ -1,21 +1,21 @@
 import os
-import requests
 from dotenv import load_dotenv
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+from rest_framework.exceptions import PermissionDenied
 from reports.models import WeeklyReport
 
-# Load active .env parameters automatically
-load_dotenv()
+# Using standard OpenAI SDK client mapping for Groq
+from openai import OpenAI
 
+load_dotenv()
 
 class AIInsightsView(APIView):
     """
-    Independent API View dedicated solely to the Gemini RAG Intelligence pipeline.
-    Bypasses standard ViewSet Model serialization constraints completely.
+    Independent API View dedicated solely to the Groq RAG Intelligence pipeline.
+    Utilizes active production reasoning models for real-time operational metrics.
     """
     permission_classes = [IsAuthenticated]
 
@@ -24,10 +24,7 @@ class AIInsightsView(APIView):
 
         # 🛑 Strict Role-Based Access Control (RBAC) Guardrail
         if not user.is_superuser and getattr(user, "role", None) != "MANAGER":
-            return Response(
-                {"error": "Access Denied. AI Operational insights are strictly restricted to management accounts."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            raise PermissionDenied("Access Denied. AI Operational insights are strictly restricted to management accounts.")
 
         raw_prompt = request.data.get("prompt", "")
         manager_prompt = str(raw_prompt).strip() if raw_prompt else ""
@@ -38,11 +35,11 @@ class AIInsightsView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 🗃️ 1. Context Collection Layer
+        # 1. Context Collection Layer (Safely bounded to 25 reports to manage content payload)
         try:
             reports_queryset = WeeklyReport.objects.select_related("user", "project").filter(
                 status="SUBMITTED"
-            ).order_by("-week_start")[:40]
+            ).order_by("-week_start")[:25]
             active_reports = list(reports_queryset)
         except Exception as e:
             return Response(
@@ -50,7 +47,7 @@ class AIInsightsView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 🔒 2. Data Privacy & Null-Safety Layer
+        # 2. Context Ingestion Normalization
         context_lines = []
         for r in active_reports:
             project_title = r.project.name if getattr(r, "project", None) else "General Bench Assignment"
@@ -69,63 +66,58 @@ class AIInsightsView(APIView):
         
         db_context = "\n".join(context_lines) if context_lines else "No active team reports have been submitted for this cycle yet."
 
-        # 🤖 3. System Instructions Context Formulation
+        # 3. System Instruction Strategy
+      #  3. Strict Structural Layout Directives
         system_instruction = (
             "You are an elite operational AI management intelligence co-pilot. Your task is to analyze the "
-            "provided real-time team report records and respond to the manager's inquiry accurately. "
-            "Focus heavily on identifying recurring blocking points across the workforce.\n\n"
+            "provided real-time team report records and respond to the manager's inquiry accurately.\n\n"
+            "CRITICAL FORMATTING RULES:\n"
+            "1. Use structured markdown tables (with column headers separated by dashes and pipes like '|---|') "
+            "to summarize numeric metrics, timelines, assignments, and logged hours allocations.\n"
+            "2. Use bold bold tags ('**') for team member profiles, metrics numbers, or severe system errors.\n"
+            "3. Organise your observations using clear hierarchical headings (###, ####) and clean bullet points.\n"
+            "4. Focus heavily on identifying recurring blocker patterns across the work surface.\n"
+            "5. If a table contains no values, output a clear, friendly markdown notice instead of leaving it empty.\n\n"
             f"### Real-time Team Activity Context Data:\n{db_context}"
         )
 
-        # 🔑 4. Verify Gemini Key Environment Variables
-        api_key = os.getenv("GEMINI_API_KEY")
-        
-        # 🌟 MANUAL KEY OVERRIDE SLOT: Fallback key if .env reading drops out
-        BACKUP_GEMINI_KEY = "AIzaSyCICF2Ml0glPWthRAnRLkl1uv6maeGmfV8"  
-        active_key = api_key if (api_key and api_key.strip() != "") else BACKUP_GEMINI_KEY
+        # 4. Initialize Groq SDK Client
+        groq_key = os.getenv("GROQ_API_KEY")
 
-        if not active_key or active_key.strip() == "":
+        if not groq_key or groq_key.strip() == "":
             return Response(
-                {"error": "Gemini Execution Stopped: API key string context is completely missing."},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Groq Execution Stopped: GROQ_API_KEY environment variable context is missing."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        # 🚀 5. Direct High-Performance REST Network Extraction Engine
+        client = OpenAI(
+            base_url="https://api.groq.com/openai/v1",
+            api_key=groq_key.strip()
+        )
+
+        # 🚀 5. Execute Cloud Model Processing Node using supported active hardware identifiers
         try:
-            clean_key = active_key.strip()
-            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-            
-            headers = {
-                "Content-Type": "application/json",
-                "x-goog-api-key": clean_key
-            }
-            
-            payload = {
-                "contents": [
+            response = client.chat.completions.create(
+                model="openai/gpt-oss-120b",  # 🌟 Updated to active production tier model setup
+                messages=[
                     {
-                        "parts": [
-                            {"text": f"System Guidelines: {system_instruction}"},
-                            {"text": f"Manager Request Input: {manager_prompt}"}
-                        ]
+                        "role": "system",
+                        "content": system_instruction
+                    },
+                    {
+                        "role": "user",
+                        "content": manager_prompt
                     }
-                ]
-            }
+                ],
+                temperature=0.2,
+                max_tokens=1500
+            )
             
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-            response_data = response.json()
-            
-            if response.status_code != 200:
-                error_msg = response_data.get("error", {}).get("message", "Unknown API error payload.")
-                return Response(
-                    {"error": f"Google Wire Server Rejection ({response.status_code}): {error_msg}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-                
-            ai_text = response_data["candidates"][0]["content"]["parts"][0]["text"]
+            ai_text = response.choices[0].message.content
             return Response({"insights": ai_text}, status=status.HTTP_200_OK)
             
         except Exception as e:
             return Response(
-                {"error": f"Live Network Request Execution Failure: {str(e)}"},
+                {"error": f"Groq Engine Inference Request Failure: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
