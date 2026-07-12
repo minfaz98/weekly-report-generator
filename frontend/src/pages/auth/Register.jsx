@@ -40,38 +40,41 @@ export default function Register() {
 
       if (err.response?.data) {
         const serverData = err.response.data;
+
         if (typeof serverData === "object") {
           const firstKey = Object.keys(serverData)[0];
           const firstError = serverData[firstKey];
 
-          const errorDetail = Array.isArray(firstError)
-            ? firstError[0]
-            : firstError;
-          errorMsg = `${firstKey.replace("_", " ")}: ${errorDetail}`;
+          errorMsg = `${firstKey.replace("_", " ")}: ${
+            Array.isArray(firstError) ? firstError[0] : firstError
+          }`;
         } else if (typeof serverData === "string") {
           errorMsg = serverData;
         }
       }
+
       toast.error(errorMsg);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-4 px-2">
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-8 rounded-xl shadow-md w-full max-w-lg transition-all"
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-md bg-white rounded-lg shadow-md p-5"
       >
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-1 font-sans">
+        <h2 className="text-xl font-bold text-center text-gray-800 mb-1">
           Join Your Workspace
         </h2>
-        <p className="text-sm text-gray-500 text-center mb-6 font-sans">
+
+        <p className="text-xs text-center text-gray-500 mb-4">
           Create a standardized team member tracking profile
         </p>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Input
               label="First Name"
               {...register("first_name", {
@@ -83,6 +86,7 @@ export default function Register() {
               })}
               error={errors.first_name}
             />
+
             <Input
               label="Last Name"
               {...register("last_name", {
@@ -96,7 +100,7 @@ export default function Register() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Input
               label="Username"
               {...register("username", {
@@ -112,6 +116,7 @@ export default function Register() {
               })}
               error={errors.username}
             />
+
             <Input
               label="Contact Number"
               type="text"
@@ -143,7 +148,10 @@ export default function Register() {
             label="Password"
             {...register("password", {
               required: "Password is required",
-              minLength: { value: 8, message: "Minimum 8 characters required" },
+              minLength: {
+                value: 8,
+                message: "Minimum 8 characters required",
+              },
               pattern: {
                 value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
                 message: "Must include uppercase, lowercase, and a number",
@@ -154,30 +162,28 @@ export default function Register() {
 
           <input type="hidden" {...register("role")} value="TEAM_MEMBER" />
 
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex gap-2 text-[11px] text-slate-500 font-medium leading-relaxed">
-            <ShieldAlert size={16} className="shrink-0 mt-0.5 text-blue-600" />
+          <div className="flex gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-[10px] leading-relaxed text-slate-500">
+            <ShieldAlert size={15} className="mt-0.5 shrink-0 text-blue-600" />
             <p>
-              Account security policies strictly lock self-service credential
-              resets. If you forget your password or system username, please
-              directly contact your assigned Workspace Manager to fetch or
-              override credentials via the standard administrative panel.
+              Forgot your password or username? Contact your Workspace Manager
+              to reset or retrieve your account credentials.
             </p>
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition duration-200 disabled:opacity-50 mt-2 text-xs uppercase tracking-wider"
+            className="w-full rounded-md bg-blue-600 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
           >
             {isSubmitting ? "Registering..." : "Register Profile"}
           </button>
         </form>
 
-        <p className="text-sm text-center text-gray-600 mt-5 font-sans">
+        <p className="mt-4 text-center text-sm text-gray-600">
           Already registered?{" "}
           <Link
             to="/login"
-            className="text-blue-600 font-semibold hover:underline"
+            className="font-semibold text-blue-600 hover:underline"
           >
             Log In
           </Link>

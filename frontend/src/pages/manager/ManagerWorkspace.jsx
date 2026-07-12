@@ -346,7 +346,7 @@ export default function ManagerWorkspace() {
           onClick={() => setIsAiOpen(true)}
           className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 border border-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-lg shadow-blue-500/20"
         >
-          <Sparkles size={14} /> AI Assistant Proxy
+          <Sparkles size={14} /> AI Assistant
         </button>
       </div>
 
@@ -468,7 +468,7 @@ export default function ManagerWorkspace() {
             <div className="flex justify-between items-start border-b border-slate-100 pb-2">
               <div className="flex items-center gap-1.5 text-red-600 font-black">
                 <AlertTriangle size={15} />
-                <h3>Purge Deployed Project</h3>
+                <h3>Delete Deployed Project</h3>
               </div>
               <button
                 type="button"
@@ -488,7 +488,7 @@ export default function ManagerWorkspace() {
                 ?
               </p>
               <p className="bg-red-50 border border-dashed border-red-100 text-[11px] text-red-700 p-2.5 rounded-xl font-semibold">
-                Warning: Purging this directory will clear all linked tracking
+                Warning: Deleting this project will clear all linked tracking
                 metrics and child structural references across the platform
                 database.
               </p>
@@ -506,7 +506,7 @@ export default function ManagerWorkspace() {
                 onClick={confirmProjectDeletion}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl shadow-sm transition"
               >
-                Confirm Purge
+                Confirm Delete
               </button>
             </div>
           </div>
