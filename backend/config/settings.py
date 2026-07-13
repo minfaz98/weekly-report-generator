@@ -16,7 +16,7 @@ environ.Env.read_env(env_file=str(BASE_DIR / '.env'))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-Read secret key and debug hooks out of the environment variables
+# Read secret key and debug hooks out of the environment variables
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 
