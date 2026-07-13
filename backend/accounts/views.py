@@ -3,7 +3,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import RegisterSerializer, UserSerializer, UserUpdateSerializer
 
 User = get_user_model()
 
@@ -15,8 +15,16 @@ class RegisterView(generics.CreateAPIView):
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
-    serializer_class = UserSerializer
+    """
+    Handles user profile data extractions and mutations.
+    Utilizes UserUpdateSerializer for safe credential configuration changes.
+    """
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method in ["PUT", "PATCH"]:
+            return UserUpdateSerializer
+        return UserSerializer
 
     def get_object(self):
         return self.request.user
