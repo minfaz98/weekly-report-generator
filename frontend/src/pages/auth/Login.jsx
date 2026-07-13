@@ -62,11 +62,6 @@ export default function Login() {
   const handleViewToggle = () => {
     reset();
     setIsAdminView(!isAdminView);
-    toast.success(
-      isAdminView
-        ? "Switched to standard Team Member login portal."
-        : "Administrative portal initialized. Enter your management credentials.",
-    );
   };
 
   return (

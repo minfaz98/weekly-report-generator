@@ -277,30 +277,21 @@ export default function ManagerWorkspace() {
     setEditingProjId(null);
   };
 
-  const computeSubmissionStatus = (report) => {
-    if (report.status !== "SUBMITTED")
-      return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">
-          Pending
-        </span>
-      );
-    if (
-      report.week_end &&
-      report.updated_at &&
-      new Date(report.updated_at) > new Date(report.week_end)
-    ) {
-      return (
-        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 uppercase">
-          Late
-        </span>
-      );
-    }
-    return (
-      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase">
-        Submitted
-      </span>
-    );
-  };
+ const computeSubmissionStatus = (report) => {
+   // 1. If the report hasn't been finalized yet, mark it as pending
+   if (report.status !== "SUBMITTED") {
+     return (
+       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">
+         Pending
+       </span>
+     );
+   }
+   return (
+     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase">
+       Submitted
+     </span>
+   );
+ };
 
   const hasActiveFilters =
     filterMember || filterProject || filterStatus || filterStart || filterEnd;
