@@ -1,7 +1,3 @@
-Here is the completely updated, fully organized version of your `README.md` file.
-
-I have added the **Groq API Key configuration** securely to the environment setup guidelines for both the backend and the final security reminder, while keeping the structural hierarchy clean and professional for your GitHub repository.
-
 ---
 
 # Weekly Report Generator & Management Analytics Dashboard
